@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.6.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+
+    <sub-flow name="generate-items-sub-flow">
+        <expression-component doc:name="Generate Items"><![CDATA[items = [];
+for (i = 0; i < payload.size(); i++) {
+	item = [ 'serviceName' : payload[i].get('channel').replace(' ', '').toLowerCase(), 'serviceInstance' : payload[i].get('country').replace(' ', '').toLowerCase(), 'data' : payload[i] ];
+	items.add(item);
+}
+
+payload = items;]]></expression-component>
+        <logger message="#[payload.size()] item(s) to process" level="INFO" doc:name="Logger"/>
+    </sub-flow>
+    
+</mule>

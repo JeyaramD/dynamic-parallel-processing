@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.6.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd">
+    
+    <flow name="parallel-processing-flow" processingStrategy="synchronous">
+        <logger message="About to perform parallel processing" level="INFO" doc:name="Logger"/>
+        <set-property propertyName="MULE_CORRELATION_ID" value="#[java.util.UUID.randomUUID().toString()]" doc:name="Set Correlation Id"/>
+        <request-reply doc:name="Request-Reply" storePrefix="parallel_processing_correlation" timeout="${parallel.processing.aggregation.timeout}">
+            <vm:outbound-endpoint exchange-pattern="one-way" path="parallel-request" transformer-refs="remove-mule-replyto-property-transformer" doc:name="Parallel Request" connector-ref="vm-connector"/>
+            <vm:inbound-endpoint exchange-pattern="one-way" path="parallel-response" doc:name="Parallel Response" connector-ref="vm-connector"/>
+        </request-reply>
+        <logger message="Parallel processing for Correlation ID #[message.inboundProperties['MULE_CORRELATION_ID']] is complete" level="INFO" doc:name="Logger"/>
+    </flow>
+    
+    <flow name="parallel-request-flow">
+        <vm:inbound-endpoint exchange-pattern="one-way" path="parallel-request" doc:name="Parallel Request" connector-ref="vm-connector"/>
+        <set-variable variableName="correlationId" value="#[message.inboundProperties['MULE_CORRELATION_ID']]" doc:name="Save Correlation Id"/>
+        <logger message="Initiated parallel processing for Correlation ID: #[flowVars['correlationId']]" level="INFO" doc:name="Logger"/>
+        <flow-ref name="generate-items-sub-flow" doc:name="Generate Items"/>
+        <foreach doc:name="For Each" >
+            <message-properties-transformer doc:name="Set Correlation Properties" overwrite="true">
+                <add-message-property key="MULE_CORRELATION_SEQUENCE" value="#[counter]"/>
+                <add-message-property key="MULE_CORRELATION_ID" value="#[flowVars['correlationId']]"/>
+                <add-message-property key="MULE_CORRELATION_GROUP_SIZE" value="#[rootMessage.payload.size()]"/>
+            </message-properties-transformer>
+            <vm:outbound-endpoint exchange-pattern="one-way" path="single-request" doc:name="Single Request" connector-ref="vm-connector"/>
+        </foreach>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload value="Error in while doing parallel requests" doc:name="Set Error Payload"/>
+            <flow-ref name="handle-parallel-processing-error-sub-flow" doc:name="Handle Parallel Processing Error"/>
+        </catch-exception-strategy>
+    </flow>
+    
+    <flow name="parallel-response-flow">
+        <vm:inbound-endpoint exchange-pattern="one-way" path="single-response" connector-ref="vm-connector" doc:name="Single Response"/>
+        <set-variable variableName="correlationId" value="#[message.inboundProperties['MULE_CORRELATION_ID']]" doc:name="Save Correlation Id"/>
+        <collection-aggregator timeout="${parallel.processing.aggregation.timeout}" failOnTimeout="true" storePrefix="parallel_processing_aggregation" doc:name="Aggregate Responses"/>
+        <vm:outbound-endpoint exchange-pattern="one-way" path="parallel-response" connector-ref="vm-connector" doc:name="Parallel Response"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload doc:name="Set Error Payload" value="Error in while aggregating parallel responses"/>
+            <idempotent-message-filter idExpression="#[flowVars['correlationId']]" storePrefix="aggregator_idempotent_filter" doc:name="Filter Out Duplicated Correlation IDs">
+                <managed-store storeName="idempotent_filter" maxEntries="100000" entryTTL="20000" expirationInterval="5000"/>
+            </idempotent-message-filter>
+            <flow-ref name="handle-parallel-processing-error-sub-flow" doc:name="Handle Parallel Processing Error"/>
+        </catch-exception-strategy>
+    </flow>
+    
+    <sub-flow name="handle-parallel-processing-error-sub-flow">
+        <transformer ref="remove-exeption-transformer" doc:name="Remove Exception"/>
+        <set-property propertyName="MULE_CORRELATION_ID" value="#[flowVars['correlationId']]" doc:name="Set Correlation Id"/>
+        <set-property propertyName="MULE_CORRELATION_GROUP_SIZE" value="-1" doc:name="Set Correlation Group Size"/>
+        <set-property propertyName="MULE_CORRELATION_SEQUENCE" value="-1" doc:name="Set Correlation Sequemce"/>
+        <vm:outbound-endpoint exchange-pattern="one-way" path="parallel-response" connector-ref="vm-connector" doc:name="Parallel Response"/>
+    </sub-flow>
+    
+</mule>

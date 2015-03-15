@@ -1,0 +1,32 @@
+[
+	{
+		"id": "1",
+		"description": "Item # 1",
+		"channel": "WEB",
+		"country": "UK"
+	},
+	{
+		"id": "2",
+		"description": "Item # 2",
+		"channel": "CALL CENTER",
+		"country": "UK"
+	},
+	{
+		"id": "3",
+		"description": "Item # 3",
+		"channel": "WEB",
+		"country": "US"
+	},
+	{
+		"id": "4",
+		"description": "Item # 4",
+		"channel": "SHOP",
+		"country": "UK"
+	},
+	{
+		"id": "5",
+		"description": "Item # 5",
+		"channel": "WEB",
+		"country": "EU"
+	}
+]
