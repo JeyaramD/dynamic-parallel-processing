@@ -53,7 +53,7 @@ http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mul
         </catch-exception-strategy>
     </flow>
     
-    <flow name="parallel-response-flow">
+    <flow name="parallel-single-response-flow">
         <vm:inbound-endpoint exchange-pattern="one-way" path="single-response" connector-ref="vm-connector" doc:name="Single Response"/>
         <set-variable variableName="correlationId" value="#[message.inboundProperties['MULE_CORRELATION_ID']]" doc:name="Save Correlation Id"/>
         <collection-aggregator timeout="${parallel.processing.aggregation.timeout}" failOnTimeout="true" storePrefix="parallel_processing_aggregation" doc:name="Aggregate Responses"/>
