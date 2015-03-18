@@ -83,7 +83,7 @@ http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mul
     
     <sub-flow name="save-correlation-info-sub-flow">
         <set-variable variableName="correlationId" value="#[message.inboundProperties['MULE_CORRELATION_ID']]" doc:name="Save Correlation Id"/>
-        <set-variable variableName="correlationGroupSize" value="#[message.inboundProperties['MULE_CORRELATION_GROUP_SIZE']]" doc:name="Save Correlatio Group Size"/>
+        <set-variable variableName="correlationGroupSize" value="#[message.inboundProperties['MULE_CORRELATION_GROUP_SIZE']]" doc:name="Save Correlation Group Size"/>
         <set-variable variableName="correlationSequence" value="#[message.inboundProperties['MULE_CORRELATION_SEQUENCE']]" doc:name="Save Correlation Sequence"/>
     </sub-flow>
     
