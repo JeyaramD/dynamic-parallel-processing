@@ -9,29 +9,29 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 
     <flow name="backend-service-web-flow" processingStrategy="synchronous">
         <expression-component doc:name="Get Conncetion Details"><![CDATA[props = app.registry.get('applicationProperties');
-flowVars['host'] = props.get('backend.web.' + payload['serviceInstance'] + '.host');
-flowVars['port'] = props.get('backend.web.' + payload['serviceInstance'] + '.port');
-flowVars['path'] = props.get('backend.web.' + payload['serviceInstance']  + '.path');
+flowVars['host'] = props.get('backend.web.' + message.inboundProperties['serviceInstance'] + '.host');
+flowVars['port'] = props.get('backend.web.' + message.inboundProperties['serviceInstance'] + '.port');
+flowVars['path'] = props.get('backend.web.' + message.inboundProperties['serviceInstance']  + '.path');
 ]]></expression-component>
-        <set-payload value="#[[ 'id' : payload['data'].get('id'), 'processedBy' : (flowVars['host'] + ':' + flowVars['port'] + '/' + flowVars['path']) ]]" doc:name="Set Response Payload"/>
+        <set-payload value="#[[ 'id' : payload['id'], 'processedBy' : ('http://' + flowVars['host'] + ':' + flowVars['port'] + '/' + flowVars['path']) ]]" doc:name="Set Response Payload"/>
     </flow>
     
     <flow name="backend-service-callcenter-flow" processingStrategy="synchronous">
         <expression-component doc:name="Get Conncetion Details"><![CDATA[props = app.registry.get('applicationProperties');
-flowVars['host'] = props.get('backend.callcenter.' + payload['serviceInstance'] + '.host');
-flowVars['port'] = props.get('backend.callcenter.' + payload['serviceInstance'] + '.port');
-flowVars['path'] = props.get('backend.callcenter.' + payload['serviceInstance'] + '.path');
+flowVars['host'] = props.get('backend.callcenter.' + message.inboundProperties['serviceInstance'] + '.host');
+flowVars['port'] = props.get('backend.callcenter.' + message.inboundProperties['serviceInstance'] + '.port');
+flowVars['path'] = props.get('backend.callcenter.' + message.inboundProperties['serviceInstance'] + '.path');
 ]]></expression-component>
-        <set-payload value="#[[ 'id' : payload['data'].get('id'), 'processedBy' : (flowVars['host'] + ':' + flowVars['port'] + '/' + flowVars['path']) ]]" doc:name="Set Response Payload"/>
+        <set-payload value="#[[ 'id' : payload['id'], 'processedBy' : ('http://' + flowVars['host'] + ':' + flowVars['port'] + '/' + flowVars['path']) ]]" doc:name="Set Response Payload"/>
     </flow>
     
     <flow name="backend-service-shop-flow" processingStrategy="synchronous">
         <expression-component doc:name="Get Conncetion Details"><![CDATA[props = app.registry.get('applicationProperties');
-flowVars['host'] = props.get('backend.shop.' + payload['serviceInstance'] + '.host');
-flowVars['port'] = props.get('backend.shop.' + payload['serviceInstance'] + '.port');
-flowVars['path'] = props.get('backend.shop.' + payload['serviceInstance'] + '.path');
+flowVars['host'] = props.get('backend.shop.' + message.inboundProperties['serviceInstance'] + '.host');
+flowVars['port'] = props.get('backend.shop.' + message.inboundProperties['serviceInstance'] + '.port');
+flowVars['path'] = props.get('backend.shop.' + message.inboundProperties['serviceInstance'] + '.path');
 ]]></expression-component>
-        <set-payload value="#[[ 'id' : payload['data'].get('id'), 'processedBy' : (flowVars['host'] + ':' + flowVars['port'] + '/' + flowVars['path']) ]]" doc:name="Set Response Payload"/>
+        <set-payload value="#[[ 'id' : payload['id'], 'processedBy' : ('http://' + flowVars['host'] + ':' + flowVars['port'] + '/' + flowVars['path']) ]]" doc:name="Set Response Payload"/>
     </flow>
     
 </mule>

@@ -25,8 +25,8 @@ http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mul
         <vm:inbound-endpoint exchange-pattern="one-way" path="parallel-request" doc:name="Parallel Request" connector-ref="vm-connector"/>
         <set-variable variableName="correlationId" value="#[message.inboundProperties['MULE_CORRELATION_ID']]" doc:name="Save Correlation Id"/>
         <logger message="Initiated parallel processing for Correlation ID: #[flowVars['correlationId']]" level="INFO" doc:name="Logger"/>
-        <flow-ref name="generate-items-sub-flow" doc:name="Generate Items"/>
         <foreach doc:name="For Each" >
+            <flow-ref name="generate-lookup-properties-sub-flow" doc:name="Generate Lookup Properties"/>
             <message-properties-transformer doc:name="Set Correlation Properties" overwrite="true">
                 <add-message-property key="MULE_CORRELATION_SEQUENCE" value="#[counter]"/>
                 <add-message-property key="MULE_CORRELATION_ID" value="#[flowVars['correlationId']]"/>
@@ -37,6 +37,19 @@ http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mul
         <catch-exception-strategy doc:name="Catch Exception Strategy">
             <set-payload value="Error in while doing parallel requests" doc:name="Set Error Payload"/>
             <flow-ref name="handle-parallel-processing-error-sub-flow" doc:name="Handle Parallel Processing Error"/>
+        </catch-exception-strategy>
+    </flow>
+    
+    <flow name="parallel-single-request-flow" >
+        <vm:inbound-endpoint exchange-pattern="one-way" path="single-request" connector-ref="vm-connector" doc:name="Single Request"/>
+        <logger message="Processing prequest #[payload]" level="INFO" doc:name="Logger"/>
+        <flow-ref name="save-correlation-info-sub-flow" doc:name="Save Correlation Info"/>
+        <flow-ref name="backend-service-#[message.inboundProperties['serviceName']]-flow" doc:name="Backend Service"/>
+        <flow-ref name="set-correlation-info-sub-flow" doc:name="Set Correlation Info"/>
+        <vm:outbound-endpoint exchange-pattern="one-way" connector-ref="vm-connector" doc:name="Single Response" path="single-response"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload value="Error while processing single request for #[message.inboundProperties['serviceName']]" doc:name="Set Error Payload"/>
+            <flow-ref name="handle-single-request-error-sub-flow" doc:name="Handle Single Request Error"/>
         </catch-exception-strategy>
     </flow>
     
@@ -53,13 +66,31 @@ http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mul
             <flow-ref name="handle-parallel-processing-error-sub-flow" doc:name="Handle Parallel Processing Error"/>
         </catch-exception-strategy>
     </flow>
-    
-    <sub-flow name="handle-parallel-processing-error-sub-flow">
+ 
+ 	<sub-flow name="handle-parallel-processing-error-sub-flow">
         <transformer ref="remove-exeption-transformer" doc:name="Remove Exception"/>
         <set-property propertyName="MULE_CORRELATION_ID" value="#[flowVars['correlationId']]" doc:name="Set Correlation Id"/>
         <set-property propertyName="MULE_CORRELATION_GROUP_SIZE" value="-1" doc:name="Set Correlation Group Size"/>
         <set-property propertyName="MULE_CORRELATION_SEQUENCE" value="-1" doc:name="Set Correlation Sequemce"/>
         <vm:outbound-endpoint exchange-pattern="one-way" path="parallel-response" connector-ref="vm-connector" doc:name="Parallel Response"/>
+    </sub-flow>
+    
+    <sub-flow name="handle-single-request-error-sub-flow">
+        <transformer ref="remove-exeption-transformer" doc:name="Remove Exception"/>
+        <flow-ref name="set-correlation-info-sub-flow" doc:name="Set Correlation Info"/>
+        <vm:outbound-endpoint exchange-pattern="one-way" connector-ref="vm-connector" doc:name="Single Response" path="single-response"/>
+    </sub-flow>
+    
+    <sub-flow name="save-correlation-info-sub-flow">
+        <set-variable variableName="correlationId" value="#[message.inboundProperties['MULE_CORRELATION_ID']]" doc:name="Save Correlation Id"/>
+        <set-variable variableName="correlationGroupSize" value="#[message.inboundProperties['MULE_CORRELATION_GROUP_SIZE']]" doc:name="Save Correlatio Group Size"/>
+        <set-variable variableName="correlationSequence" value="#[message.inboundProperties['MULE_CORRELATION_SEQUENCE']]" doc:name="Save Correlation Sequence"/>
+    </sub-flow>
+    
+    <sub-flow name="set-correlation-info-sub-flow">
+        <set-property propertyName="MULE_CORRELATION_ID" value="#[flowVars['correlationId']]" doc:name="Set Correlation Id"/>
+        <set-property propertyName="MULE_CORRELATION_GROUP_SIZE" value="#[flowVars['correlationGroupSize']]" doc:name="Set Correlation Group Size"/>
+        <set-property propertyName="MULE_CORRELATION_SEQUENCE" value="#[flowVars['correlationSequence']]" doc:name="Set Correlation Sequence"/>
     </sub-flow>
     
 </mule>
